@@ -20,6 +20,7 @@ module load VCFtools
 #cat meA.bed meB.bed meC.bed meD.bed meE.bed meF.bed > $OUTDIR/all_mes.bed
 
 cd /home/apb56/project/VCFFILTER
+
 NAME=BCFtools_GxE_minQ90_missing_mac3
 vcftools --vcf ${NAME}.recode.vcf --bed autosomes.bed --recode --out ${NAME}_autosomes
 vcftools --vcf ${NAME}.recode.vcf --bed X.bed --recode --out ${NAME}_X
