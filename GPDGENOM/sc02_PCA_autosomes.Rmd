@@ -1,0 +1,114 @@
+---
+title: "PCA by sex for all muller elements"
+author: "Anusha Bishop"
+date: "4/3/2020"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+library(qqman)
+library(gridExtra)
+library(pracma)
+library(ggplot2)
+library(philentropy)
+library(adegenet)
+library(plotly)
+```
+
+```{r compile and plot pca by region for males vs females for each Muller element}
+#MEs <- read.delim(file="../scaff_coord_len_Gfus_new_10x.tsv",header=T)
+indinfoDF <- as.data.frame(read.table("/Users/Anusha/Documents/GffUganda/GxE_individual_info.txt",sep="\t",header=T))
+table(indinfoDF[c("Sex","Cluster")])
+popinfo <- as.data.frame(t(table(indinfoDF[,c("Sex","SiteID")])))
+popinfoDF <- popinfo[popinfo$Sex=="F",c(1,3)]
+names(popinfoDF) <- c("SiteID","Freq_F")
+popinfoDF$Freq_M <- popinfo[popinfo$Sex=="M",3]
+popinfoDF <- left_join(popinfoDF,distinct(indinfoDF[,c(5: 9,11:12)]))
+
+```
+
+
+```{r PCA for all for autosomes}
+################################
+#load PCA from plink all for All_ME
+################################
+
+pca_All_ME <- read.delim("/Users/Anusha/Documents/GffUganda/BCFtools_GxE_minQ90_missing_mac3_autosomes_meanDP_AB_thin50kb_mind50.eigenvec",sep=" ",header=F)
+pca_All_ME <- left_join(pca_All_ME,indinfoDF,by=c("V1" = "IndivID"))
+eig <- read.delim(paste0("/Users/Anusha/Documents/GffUganda/BCFtools_GxE_minQ90_missing_mac3_autosomes_meanDP_AB_thin50kb_mind50.eigenval"),header=F)
+#find percent variance explained for each of the three PCs
+pc1 <- round(eig$V1[1]/sum(eig$V1)*100,digits=2)
+pc2 <- round(eig$V1[2]/sum(eig$V1)*100,digits=2)
+pc3 <- round(eig$V1[3]/sum(eig$V1)*100,digits=2)
+
+#assign PC axis to plot
+PC1 <- pca_All_ME$V3
+PC2 <- pca_All_ME$V4
+PC3 <- pca_All_ME$V5
+
+##################################
+#visualize by cluster
+##################################
+cluster <- pca_All_ME$Cluster
+sex <- pca_All_ME$Sex
+df <- data.frame(sex,cluster,PC1,PC2,PC3)
+centroids <- aggregate(cbind(PC1,PC2,PC3)~cluster,df,mean)
+gg <- merge(df,aggregate(cbind(mean.x=PC1,mean.y=PC2,mean.z=PC3)~cluster,df,mean),by="cluster")
+psnp_All_ME = NULL
+psnp_All_ME <- ggplot(data = gg, aes(PC1,PC2,color=factor(cluster),shape=factor(sex)))+
+  xlab(paste("PC 1 (",pc1,"%)"))+
+  ylab(paste("PC 2 (",pc2,"%)"))+
+  geom_point(size=2)+
+  #stat_ellipse(type="norm", level = 0.9, linetype=1)+
+  #geom_point(aes(x=mean.x,y=mean.y),size=0)+
+  #geom_segment(aes(x=mean.x, y=mean.y, xend=PC1, yend=PC2))+
+  scale_colour_manual(values = c("#009AEB","gold", "#6E2884","#FF5700"))+
+  ggtitle("PCA by genetic cluster: All_ME")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  #scale_x_reverse()+
+  theme(panel.grid.major = element_line(colour = "#856f2c"), panel.grid.minor = element_blank(), panel.background = element_rect(fill = "transparent",   colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.key = element_blank(), legend.title = element_blank(), axis.line = element_line(colour = "black"), aspect.ratio = 1)
+plotly_All_ME = NULL
+plotly_All_ME <- plot_ly(x=PC1, y=PC2, z=PC3, type="scatter3d", mode="markers", symbol=factor(sex),symbols=c("circle","diamond","square"),color=factor(cluster),colors=c("#009AEB","gold", "#6E2884","#FF5700")) %>% layout(title="PCA 3D by genetic cluster: All_ME")
+
+##################################
+#visualize by site
+##################################
+cluster <- pca_All_ME$SiteID
+sex <- pca_All_ME$Sex
+df <- data.frame(sex,cluster,PC1,PC2,PC3)
+df <- data.frame(cluster,PC1,PC2,PC3)
+centroids <- aggregate(cbind(PC1,PC2,PC3)~cluster,df,mean)
+gg <- merge(df,aggregate(cbind(mean.x=PC1,mean.y=PC2,mean.z=PC3)~cluster,df,mean),by="cluster")
+psnp_All_ME_site = NULL
+psnp_All_ME_site <- ggplot(data = gg, aes(PC1,PC2,color=factor(cluster)))+
+  xlab(paste("PC 1 (",pc1,"%)"))+
+  ylab(paste("PC 2 (",pc2,"%)"))+
+  geom_point(size=2)+
+  #stat_ellipse(type="norm", level = 0.9, linetype=1)+
+  #geom_point(aes(x=mean.x,y=mean.y),size=0)+
+  #geom_segment(aes(x=mean.x, y=mean.y, xend=PC1, yend=PC2))+
+  scale_colour_manual(values = c(rainbow((length(unique(cluster)))+1)))+
+  ggtitle("PCA by sampling site: All_ME")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  #scale_x_reverse()+
+  theme(panel.grid.major = element_line(colour = "#856f2c"), panel.grid.minor = element_blank(), panel.background = element_rect(fill = "transparent",   colour = NA), plot.background = element_rect(fill = "transparent", colour = NA), legend.key = element_blank(), legend.title = element_blank(), axis.line = element_line(colour = "black"), aspect.ratio = 1)
+plotly_All_ME_site = NULL
+plotly_All_ME_site <- plot_ly(x=PC1, y=PC2, z=PC3, type="scatter3d", mode="markers", symbol=factor(sex),symbols=c("circle","diamond","square"), color=factor(cluster),colors=c(rainbow(length(unique(cluster))+1))) %>% layout(title="PCA 3D by sampling site: All_ME")
+
+#view eigenvalues
+#barplot(eig$V1[1:20],main="PCA eigenvalues: All ME", col=heat.colors(20))
+#view plot
+psnp_All_ME
+#view 3D plot
+plotly_All_ME
+#view plot by site
+#psnp_All_ME_site
+#view 3D plot by site
+#plotly_All_ME_site
+
+```
+
+
