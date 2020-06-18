@@ -12,7 +12,7 @@
 module load PLINK/1.90-beta6.9
 module load VCFtools
 
-cd /home/apb56/project/VCFFILTER
+cd /home/fas/caccone/apb56/project/VCFFILTER
 
 NAME=BCFtools_GxE_minQ90_missing_mac3_autosomes
 vcftools --vcf ${NAME}.recode.vcf \

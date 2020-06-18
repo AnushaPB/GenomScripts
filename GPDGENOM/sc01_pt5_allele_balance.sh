@@ -12,7 +12,7 @@
 module load PLINK/1.90-beta6.9
 module load VCFtools
 
-cd /home/apb56/project/VCFFILTER
+cd /home/fas/caccone/apb56/project/VCFFILTER
 
 #create the list of snps to exclude
 NAME1=BCFtools_GWAS
